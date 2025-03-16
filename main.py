@@ -24,6 +24,16 @@ import json
 import csv
 import google.generativeai as genai
 from kivy.uix.scrollview import ScrollView
+from kivy.animation import Animation
+from kivy.clock import Clock
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.screenmanager import Screen
+from kivy.graphics import Color, Rectangle
+from kivy.uix.button import Button
+from kivy.graphics import Color, RoundedRectangle
+from kivy.properties import ListProperty
 
 # Register custom font
 LabelBase.register(name="Caveat", fn_regular="Caveat-VariableFont_wght.ttf")
@@ -337,6 +347,22 @@ class TestScreen(Screen):
         self.line_image.source = "emotion_trend.png"
         self.line_image.reload()
 
+
+class RoundedButton(Button):
+    # Property to control the corner radius
+    corner_radius = ListProperty([20, 20, 20, 20])  # Top-left, top-right, bottom-right, bottom-left
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind(pos=self.update_rect, size=self.update_rect)
+        self.update_rect()
+
+    def update_rect(self, *args):
+        # Draw a rounded rectangle as the button background
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(*self.background_color)  # Use the button's background color
+            RoundedRectangle(pos=self.pos, size=self.size, radius=self.corner_radius)
 class CoverPage(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -375,8 +401,8 @@ class CoverPage(Screen):
         )
         layout.add_widget(subtitle)
 
-        # Add a "Start" button
-        start_button = Button(
+        # Add a "Start" button with rounded corners
+        self.start_button = RoundedButton(
             text="Start Journaling",
             font_size=24,
             font_name="Caveat",
@@ -387,7 +413,8 @@ class CoverPage(Screen):
             pos_hint={'center_x': 0.5, 'center_y': 0.4},
             on_press=self.start_journaling
         )
-        layout.add_widget(start_button)
+        self.start_button.bind(on_enter=self.on_button_hover, on_leave=self.on_button_leave)
+        layout.add_widget(self.start_button)
 
         self.add_widget(layout)
 
@@ -396,8 +423,22 @@ class CoverPage(Screen):
         self.bg_rect.pos = self.pos
 
     def start_journaling(self, instance):
-        # Transition to the main journal screen
-        self.manager.current = 'entry0'
+        # Shake animation when clicked
+        shake_animation = Animation(pos_hint={'center_x': 0.52}, duration=0.05) + \
+                          Animation(pos_hint={'center_x': 0.48}, duration=0.05) + \
+                          Animation(pos_hint={'center_x': 0.5}, duration=0.05)
+        shake_animation.start(instance)
+
+        # Transition to the main journal screen after the shake animation
+        Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'entry0'), 0.15)
+
+    def on_button_hover(self, instance, *args):
+        # Enlarge animation on hover
+        Animation(size=(220, 55), duration=0.2).start(instance)
+
+    def on_button_leave(self, instance, *args):
+        # Shrink animation when hover ends
+        Animation(size=(200, 50), duration=0.2).start(instance)
 
 
 class HoverableSidebar(BoxLayout):
