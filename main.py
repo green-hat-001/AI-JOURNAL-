@@ -337,6 +337,68 @@ class TestScreen(Screen):
         self.line_image.source = "emotion_trend.png"
         self.line_image.reload()
 
+class CoverPage(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # Use a FloatLayout for flexible positioning
+        layout = FloatLayout()
+
+        # Set a warm background color
+        with layout.canvas.before:
+            Color(0.96, 0.94, 0.89, 1)  # Light beige
+            self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
+
+        layout.bind(size=self.update_bg_rect, pos=self.update_bg_rect)
+
+        # Add a title
+        title = Label(
+            text="AI Journal",
+            font_size=48,
+            font_name="Caveat",
+            color=(0.2, 0.2, 0.2, 1),  # Dark gray for contrast
+            size_hint=(None, None),
+            size=(400, 100),
+            pos_hint={'center_x': 0.5, 'center_y': 0.7}
+        )
+        layout.add_widget(title)
+
+        # Add a subtitle
+        subtitle = Label(
+            text="Your personal space for reflection",
+            font_size=24,
+            font_name="Caveat",
+            color=(0.4, 0.4, 0.4, 1),  # Lighter gray
+            size_hint=(None, None),
+            size=(600, 50),
+            pos_hint={'center_x': 0.5, 'center_y': 0.6}
+        )
+        layout.add_widget(subtitle)
+
+        # Add a "Start" button
+        start_button = Button(
+            text="Start Journaling",
+            font_size=24,
+            font_name="Caveat",
+            background_color=(0.8, 0.7, 0.6, 1),  # Warm button color
+            color=(1, 1, 1, 1),  # White text
+            size_hint=(None, None),
+            size=(200, 50),
+            pos_hint={'center_x': 0.5, 'center_y': 0.4},
+            on_press=self.start_journaling
+        )
+        layout.add_widget(start_button)
+
+        self.add_widget(layout)
+
+    def update_bg_rect(self, *args):
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos
+
+    def start_journaling(self, instance):
+        # Transition to the main journal screen
+        self.manager.current = 'entry0'
+
 
 class HoverableSidebar(BoxLayout):
     def __init__(self, screen_manager, **kwargs):
@@ -391,9 +453,11 @@ class HoverIndicator(Widget):
 class JournalApp(App):
     def build(self):
         sm = ScreenManager()
-        last_entry = load_last_entry()
 
-        # Add initial screens
+        # Add the Cover Page as the first screen
+        sm.add_widget(CoverPage(name='cover'))
+
+        # Add the JournalEntry and TestScreen
         sm.add_widget(JournalEntry(name='entry0'))
         sm.add_widget(TestScreen(name='test'))
 
@@ -419,7 +483,8 @@ class JournalApp(App):
         # Bind mouse motion to detect hover
         Window.bind(mouse_pos=lambda w, pos: self.detect_hover(pos, sidebar))
 
-        sm.current = last_entry
+        # Set the initial screen to the Cover Page
+        sm.current = 'cover'
         return root
 
     def detect_hover(self, mouse_pos, sidebar):
